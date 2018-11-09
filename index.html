@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/3.3.0/firebase.js"></script>
+
+    <!-- ACE and its JavaScript mode and theme files -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.2.5/ace.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.2.5/mode-javascript.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.2.5/theme-textmate.js"></script>
+
+    <!-- Firepad -->
+    <link rel="stylesheet" href="https://cdn.firebase.com/libs/firepad/1.4.0/firepad.css" />
+    <script src="https://cdn.firebase.com/libs/firepad/1.4.0/firepad.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/1.8.7/showdown.min.js"></script>
+
+    <style>
+      html {
+        height: 100%;
+      }
+
+      body {
+        margin: 0;
+        height: 100%;
+        position: relative;
+        width: 48%;
+      }
+
+      #firepad-container {
+        height: 100%;
+      }
+      #preview {
+        position: fixed;
+        right: 0;
+        top: 0;
+        height: 100%;
+        width: 48%;
+        overflow-y: scroll;
+      }
+    </style>
+  </head>
+
+  <body onload="init()">
+    <div id="firepad-container"></div>
+    <div id="preview"></div>
+    <script>
+      var converter = new showdown.Converter();
+      var preview = document.getElementById("preview");
+      var firepad;
+      var ready = false;
+      var previousText = null;
+
+      function refresh() {
+        if (ready) {
+          var newText = firepad.getText();
+          if (newText !== previousText) {
+            previousText = newText;
+            preview.innerHTML = converter.makeHtml(previousText);
+          }
+        }
+      }
+
+      function init() {
+        //// Initialize Firebase.
+        var config = {
+          apiKey: "AIzaSyDeLzG5D-B18Sl60aLvJISzq0IVGk-2NQQ",
+          authDomain: "sip-td24.firebaseapp.com",
+          databaseURL: "https://sip-td24.firebaseio.com"
+        };
+        firebase.initializeApp(config);
+        //// Get Firebase Database reference.
+        var firepadRef = getExampleRef();
+        //// Create ACE
+        var editor = ace.edit("firepad-container");
+        editor.setTheme("ace/theme/textmate");
+        var session = editor.getSession();
+        session.setUseWrapMode(true);
+        session.setUseWorker(false);
+        session.setMode("ace/mode/markdown");
+        //// Create Firepad.
+        firepad = Firepad.fromACE(firepadRef, editor, {
+          defaultText:
+            '// Python Editing with Firepad!\ndef go():\n    message = "Hello, world."\n    print(message);\n'
+        });
+        firepad.on("ready", function() {
+          ready = true;
+          refresh();
+        });
+        // firepad.on('synced', function(isSynced) {
+        //   if (isSynced) {
+        //     preview.innerHTML = converter.makeHtml(firepad.getText());
+        //   }
+        // });
+      }
+      // Helper to get hash from end of URL or generate a random one.
+      function getExampleRef() {
+        var ref = firebase.database().ref();
+        var hash = window.location.hash.replace(/#/g, "");
+        if (hash) {
+          ref = ref.child(hash);
+        } else {
+          ref = ref.push(); // generate unique location.
+          // window.location = window.location + '#' + ref.key; // add it as a hash to the URL.
+        }
+        if (typeof console !== "undefined") {
+          console.log("Firebase data: ", ref.toString());
+        }
+        return ref;
+      }
+      setInterval(function() {
+        refresh();
+      }, 100);
+    </script>
+  </body>
+</html>
